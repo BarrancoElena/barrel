@@ -7,8 +7,6 @@ on:
 jobs:
   coverage:
     runs-on: ubuntu-latest
-    env:
-      VDIFFR_RUN_TESTS: "false"   # desactiva los snapshots de vdiffr en CI
 
     steps:
       - uses: actions/checkout@v4
@@ -32,8 +30,17 @@ jobs:
         shell: bash
         run: |
           Rscript - <<'RS'
-          tf <- list.files("tests/testthat", pattern="^test.*\\.R$", full.names=TRUE)
-          tf <- tf[!grepl("visual", tf, ignore.case=TRUE)]
-          pc <- covr::percent_coverage(covr::package_coverage(test_files = tf))
+          Sys.setenv(VDIFFR_RUN_TESTS = "false")
+          files <- list.files("tests/testthat", pattern="^test.*\\.R$", full.names=TRUE)
+          files <- files[!grepl("visual", files, ignore.case=TRUE)]
+          tests_fn <- function() {
+            if (length(files)) {
+              for (f in files) testthat::test_file(f, reporter = "silent")
+            } else {
+              message("No non-visual tests found.")
+            }
+          }
+          cov <- covr::package_coverage(tests = tests_fn)
+          pc  <- covr::percent_coverage(cov)
           cat(sprintf("%.2f%%\n", pc))
           RS
