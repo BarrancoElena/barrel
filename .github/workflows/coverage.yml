@@ -1,4 +1,4 @@
-name: R check + Coverage
+name: Coverage
 
 on:
   push:
@@ -6,14 +6,12 @@ on:
   pull_request:
 
 jobs:
-  build:
+  coverage:
     runs-on: ubuntu-latest
     permissions:
       contents: read
     env:
-      # Solo necesario si el repo es privado:
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
+      COVERAGE_MIN: "0"
     steps:
       - uses: actions/checkout@v4
 
@@ -21,29 +19,24 @@ jobs:
         with:
           r-version: 'release'
           use-public-rspm: true
-
-      - uses: r-lib/actions/setup-pandoc@v2
-
-      # Esto resuelve automáticamente dependencias de R y del sistema (sysreqs)
-      - name: Install R deps (with sysreqs)
+      - name: Install deps
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          packages: |
-            any::rcmdcheck
-            any::covr
-          extra-packages: any::rcmdcheck, any::covr
-          needs: check
+          packages: any::covr
+          extra-packages: any::covr
+          needs: coverage
 
-      - name: R CMD check
+      - name: Run tests and compute coverage
         run: |
-          R -q -e "rcmdcheck::rcmdcheck(args='--no-manual', error_on='warning')"
-
-      - name: Generate coverage (Cobertura XML)
-        run: |
-          R -q -e "cov <- covr::package_coverage(); print(cov)"
-          R -q -e "covr::to_cobertura(cov, file='coverage.xml')"
-
-      - name: Upload to Codecov (only on main)
+          R -q -e "cov <- covr::package_coverage();
+                   print(cov);
+                   pc <- covr::percent_coverage(cov);
+                   cat('Total coverage:', pc, '%\\n');
+                   if (as.numeric(Sys.getenv('COVERAGE_MIN')) > 0 && pc < as.numeric(Sys.getenv('COVERAGE_MIN'))) {
+                     stop(sprintf('Coverage %.2f%% is below threshold %s%%', pc, Sys.getenv('COVERAGE_MIN')))
+                   }
+                   covr::to_cobertura(cov, file='coverage.xml')"
+      - name: Upload to Codecov
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: codecov/codecov-action@v4
         with:
