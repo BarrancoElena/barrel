@@ -11,9 +11,8 @@ jobs:
     permissions:
       contents: read
     env:
-      RCACHE_DIR: /home/runner/.Rcache
-      PAK_CACHE_DIR: /home/runner/.cache/R/pak
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }} # solo necesario si el repo es privado
+      # Solo necesario si el repo es privado:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
     steps:
       - uses: actions/checkout@v4
@@ -25,37 +24,24 @@ jobs:
 
       - uses: r-lib/actions/setup-pandoc@v2
 
-      - name: Cache pak
-        uses: actions/cache@v4
+      # Esto resuelve automáticamente dependencias de R y del sistema (sysreqs)
+      - name: Install R deps (with sysreqs)
+        uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          path: |
-            ${{ env.PAK_CACHE_DIR }}
-            ~/.local/share/R/pak
-          key: pak-${{ runner.os }}-release-${{ hashFiles('**/DESCRIPTION') }}
-          restore-keys: |
-            pak-${{ runner.os }}-release-
-
-      - name: Cache R.cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.RCACHE_DIR }}
-          key: rcache-${{ runner.os }}-release-${{ github.sha }}
-          restore-keys: |
-            rcache-${{ runner.os }}-release-
-
-      - name: Install deps (pak)
-        run: |
-          R -q -e "install.packages('pak', repos='https://cran.r-project.org')"
-          R -q -e "pak::pak(c('rcmdcheck','covr'))"
-          R -q -e "pak::pak('local::.', dependencies = TRUE)"
+          packages: |
+            any::rcmdcheck
+            any::covr
+          extra-packages: any::rcmdcheck, any::covr
+          needs: check
 
       - name: R CMD check
         run: |
-          R -q -e "rcmdcheck::rcmdcheck(args='--no-manual')"
+          R -q -e "rcmdcheck::rcmdcheck(args='--no-manual', error_on='warning')"
 
       - name: Generate coverage (Cobertura XML)
         run: |
-          R -q -e "cov <- covr::package_coverage(); covr::to_cobertura(cov, file='coverage.xml')"
+          R -q -e "cov <- covr::package_coverage(); print(cov)"
+          R -q -e "covr::to_cobertura(cov, file='coverage.xml')"
 
       - name: Upload to Codecov (only on main)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
