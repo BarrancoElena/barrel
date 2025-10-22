@@ -1,0 +1,278 @@
+---
+title: "Visualizing Ordinations with barrel"
+author: "Diego Barranco-Elena"
+date: "2025-06-01"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Visualizing Ordinations with barrel}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Introduction
+
+Multivariate ordination methods are widely used in ecology to analyze community structure and environmental gradients. While plotting tools exist in packages such as `vegan` and `ggvegan`, they often lack flexibility or require verbose and complex ggplot construction. The `barrel` package provides a streamlined, modular, and tidyverse-compatible framework for generating informative ordination graphics with minimal code.
+
+## Installation
+
+```r
+# install.packages("devtools")
+devtools::install_github("XXXX/barrel")
+```
+
+## Load packages and example data
+
+```r
+library(vegan)
+library(ggplot2)
+library(ggrepel)
+library(barrel)
+
+data(dune)
+data(dune.env)
+```
+
+## Supported ordination methods examples
+
+```r
+# NMDS
+nmds <- metaMDS(dune, k = 2)
+
+# RDA
+rda_res <- rda(dune ~ A1 + Moisture + Management, data = dune.env)
+
+# dbRDA / capscale
+dbrda_res <- capscale(dune ~ A1 + Moisture, data = dune.env, distance = "bray")
+```
+
+## Quickstart with autoplot()
+
+---
+
+## **autoplot() arguments**
+
+| Argument           | Description                                                                 | Default        |
+|--------------------|-----------------------------------------------------------------------------|----------------|
+| `group`            | Grouping variable used to compute ellipses and centroids                    | *(required)*   |
+| `data`             | Community matrix used to extract environmental vectors                      | `NULL`         |
+| `kind`             | Type of ellipse: `"se"`, `"sd"`, or `"ci"`                                  | `"se"`         |
+| `conf`             | Confidence level for ellipses                                               | `0.95`         |
+| `method`           | Covariance method: `"classic"` or `"robust"`                                | `"classic"`    |
+| `geom_type`        | Ellipse representation: `"polygon"` or `"path"`                             | `"polygon"`    |
+| `show_arrows`      | Whether to plot environmental arrows                                        | `TRUE`         |
+| `show_labels`      | Whether to label arrows                                                     | `TRUE`         |
+| `show_centroids`   | Whether to draw group centroids                                             | `FALSE`        |
+| `show_ellipses`    | Whether to draw ellipses                                                    | `TRUE`         |
+| `p_thresh`         | P-value threshold for displaying arrows                                     | `0.05`         |
+| `alpha`            | Transparency of ellipses                                                    | `0.5`          |
+
+
+The `autoplot()` function provides a fast way to visualize ordination results using minimal syntax. It detects the ordination method and automatically adds ellipses, centroids, and environmental vectors if desired. Below we apply it to NMDS, RDA, and dbRDA models using the `dune` dataset.
+
+```r
+ord.ndms <- barrel_prepare(nmds, dune.env)
+autoplot(ord.ndms, group = "Management", data = dune)
+
+ord.rda <- barrel_prepare(rda_res, dune.env)
+autoplot(ord.rda, group = "Management", data = dune)
+
+ord.dbrda <- barrel_prepare(dbrda_res, dune.env)
+autoplot(ord.dbrda, group = "Management", data = dune)
+```
+## Understanding `kind`: standard error vs. standard deviation
+
+The `kind` argument in `autoplot()` and `stat_barrel()` determines the type of ellipse that is drawn around each group. It affects how dispersion or precision is visualized:
+
+| kind | Description |
+|------|-------------|
+| `"se"`  | **Standard error** of group centroids. Shrinks with larger sample size. Useful to show **precision**. *(default)* |
+| `"sd"`  | **Standard deviation** of observations. Reflects **spread** of the group, independent of sample size. |
+| `"ci"`  | Confidence interval based on t-distribution. Included for flexibility, but less common. |
+
+```r
+# Compare ellipse types
+autoplot(ord.rda, group = "Management", data = dune, kind = "se")
+autoplot(ord.rda, group = "Management", data = dune, kind = "sd")
+```
+
+## Customizing autoplot()
+
+You can customize the graphical output of `autoplot()` by specifying parameters that control ellipse type, confidence level, covariance estimation method, and which components to display. The following examples show how to use these options to adapt the plots to your analysis goals.
+
+
+```r
+autoplot(ord.ndms, group = "Management", data = dune,
+         kind = "se", method = "classic", conf = 0.95,
+         geom_type = "path",
+         show_arrows = FALSE, show_labels = FALSE,
+         show_centroids = TRUE, show_ellipses = TRUE)
+
+autoplot(ord.rda, group = "Management", data = dune,
+         kind = "se", method = "classic", conf = 0.95,
+         geom_type = "polygon",
+         show_arrows = FALSE, show_labels = FALSE,
+         show_centroids = TRUE, show_ellipses = TRUE,
+         p_thresh = 0.05,
+         alpha = 0.5)
+
+autoplot(ord.dbrda, group = "Management", data = dune,
+         kind = "sd", method = "classic", conf = 0.68,
+         geom_type = "polygon",
+         show_arrows = TRUE, show_labels = TRUE,
+         show_centroids = FALSE, show_ellipses = TRUE,
+         alpha = 0.5)
+```
+
+## Example: robust method with outliers
+
+Robust methods can improve ordination visualizations when your data contain outliers or strong deviations from multivariate normality. In this example, we simulate two well-separated groups along with an extreme outlier to show how the `method = "robust"` option changes ellipse estimation and compare with `method = "classic"`.
+
+```r
+# Simulated data with outliers and groups
+set.seed(123)
+sim_data <- matrix(NA, nrow = 15, ncol = 4)
+
+# Group A: 4 normal + 1 strong outlier
+sim_data[1:4, ] <- matrix(rnorm(4 * 4, mean = 5), ncol = 4)
+sim_data[5, ]   <- rep(30, 4)
+
+# Group B: 5 normal
+sim_data[6:10, ] <- matrix(rnorm(5 * 4, mean = 7), ncol = 4)
+
+# Group C: 4 normal + 1 mild outlier
+sim_data[11:14, ] <- matrix(rnorm(4 * 4, mean = 6), ncol = 4)
+sim_data[15, ]    <- rnorm(4, mean = 12)
+
+# Metadata
+metadata <- data.frame(Management = factor(rep(c("A", "B", "C"), each = 5)))
+
+# Labels
+colnames(sim_data) <- paste0("Sp", 1:4)
+rownames(sim_data) <- paste0("Site", seq_len(nrow(sim_data)))
+
+
+# Perform PCA
+ord_sim <- rda(sim_data, scale = TRUE)
+ord_sim <- barrel_prepare(ord_sim, metadata)
+
+# Plot with method = "robust"
+autoplot(ord_sim, group = "Management",
+         kind = "se", method = "robust", conf = 0.95,
+         geom_type = "polygon", alpha = 0.3,
+         show_centroids = F, show_arrows = FALSE)
+         
+autoplot(ord_sim, group = "Management",
+         kind = "sd", method = "robust", conf = 0.95,
+         geom_type = "polygon", alpha = 0.3,
+         show_centroids = F, show_arrows = FALSE)
+
+autoplot(ord_sim, group = "Management",
+         kind = "se", method = "classic", conf = 0.95,
+         geom_type = "polygon", alpha = 0.3,
+         show_centroids = F, show_arrows = FALSE)
+         
+autoplot(ord_sim, group = "Management",
+         kind = "sd", method = "classic", conf = 0.95,
+         geom_type = "polygon", alpha = 0.3,
+         show_centroids = F, show_arrows = FALSE)
+```
+
+## Full control with ggplot2 and stat_barrel_*
+
+## **stat_barrel_*() family arguments**
+
+
+| Function                | Key arguments                        | Description                                                          | Default value(s)                   |
+|-------------------------|--------------------------------------|----------------------------------------------------------------------|------------------------------------|
+| `stat_barrel()`         | `kind`, `conf`, `method`, `geom_type`| Draws ellipses around groups                                         | `"se"`, `0.95`, `"classic"`, `"polygon"` |
+| `stat_barrel_centroid()`| `method`, `shape`                    | Computes and draws group centroids                                   | `"classic"`, `shape = 3`          |
+| `stat_barrel_arrows()`  | `ord`, `matrix`, `labels`, `p_thresh`| Draws environmental vectors (via `envfit`)                           | `labels = TRUE`, `p_thresh = 0.05`|
+| `stat_barrel_annotate()`| `ord`, `xpad`, `ypad`                | Adds R²/stress annotation in bottom-left corner                      | `xpad = 0.05`, `ypad = 0.05`      |
+
+If you want full flexibility over plot appearance and layering, you can use the individual `stat_barrel_*` functions directly within a `ggplot()` call. This allows you to customize geometry, color, shape, and statistical layers independently while leveraging the modular logic of the `barrel` package.
+
+```r
+scores_df <- as.data.frame(scores(nmds, display = "sites"))
+scores_df$Management <- dune.env$Management
+
+ggplot(scores_df, aes(x = NMDS1, y = NMDS2, group = Management,
+                      color = Management, fill = Management,
+                      linetype = Management)) +
+  geom_point(aes(shape = Management), size = 2) +
+  stat_barrel(kind = "se", conf = 0.95, method = "classic",
+              geom_type = "polygon", alpha = 0.3, color = "black") +
+  stat_barrel_centroid(method = "classic", shape = 4, size = 3) +
+  stat_barrel_arrows(ord = nmds, matrix = dune, labels = TRUE,
+                     arrow.color = "black",
+                     labels.color = "darkblue", labels.fontface = "bold",
+                     show.significant = TRUE) +
+  stat_barrel_annotate(ord = nmds) +
+  labs(title = "NMDS ordination with ellipses, centroids, and arrows") +
+  theme_minimal() +
+  theme(legend.position = "top")
+
+scores_rda <- as.data.frame(scores(rda_res, display = "sites"))
+scores_rda$Management <- dune.env$Management
+
+ggplot(scores_rda, aes(x = RDA1, y = RDA2, group = Management,
+                       color = Management, fill = Management,
+                       linetype = Management)) +
+  geom_point(aes(shape = Management), size = 2) +
+  stat_barrel(kind = "se", conf = 0.95, method = "classic",
+              geom_type = "polygon",
+              alpha = 0.3, color = "black") +
+  stat_barrel_centroid(method = "classic", shape = 5, size = 3) +
+  stat_barrel_arrows(ord = rda_res, matrix = dune, labels = TRUE,
+                     arrow.color = "black",
+                     labels.color = "blue", labels.fontface = "italic",
+                     show.significant = TRUE) +
+  stat_barrel_annotate(ord = rda_res) +
+  labs(title = "RDA ordination") +
+  theme_minimal() +
+  theme(legend.position = "top")
+```
+
+## Calculating ellipses, centroids, vectors manually
+
+```r
+ellipses_df <- ord_ellipse_groups(scores_df, group_var = "Management",
+                                  axis1 = "NMDS1", axis2 = "NMDS2",
+                                  kind = "se", conf = 0.95, method = "classic")
+
+centroids_df <- ord_extract_centroids(scores_df, "Management",
+"NMDS1", "NMDS2", method = "classic")
+
+env_vectors <- ord_vectors(nmds, dune, p_thresh = 0.05, filter = "significant")
+```
+
+## Model summary with barrel_ord_summary()
+
+```r
+barrel_ord_summary(nmds)
+barrel_ord_summary(rda_res)
+barrel_ord_summary(dbrda_res)
+```
+
+## Getting help for individual functions
+
+Once the package is installed, you can access help files with:
+
+```r
+?ord_vectors
+?ord_ellipse_groups
+?barrel_ord_summary
+```
+
+## Citation
+
+To cite `barrel`, use:
+
+```r
+citation("barrel")
+```
+
+## Reproducibility
+
+```r
+sessionInfo()
+```

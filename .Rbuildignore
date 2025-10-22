@@ -1,0 +1,11 @@
+^README\.Rmd$
+^barrel\.Rproj$
+^LICENSE\.md$
+^doc$
+^Meta$
+^.*\\.Rproj$
+^\\.Rproj\\.user$
+^\\.gitignore$
+^README\\.html$
+^\.Rproj\.user$
+^\.lintr$
