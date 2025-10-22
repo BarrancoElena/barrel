@@ -30,12 +30,13 @@ jobs:
         shell: bash
         run: |
           Rscript - <<'RS'
-          Sys.setenv(VDIFFR_RUN_TESTS = "false")
           files <- list.files("tests/testthat", pattern="^test.*\\.R$", full.names=TRUE)
           files <- files[!grepl("visual", files, ignore.case=TRUE)]
           tests_fn <- function() {
             if (length(files)) {
-              for (f in files) testthat::test_file(f, reporter = "silent")
+              testthat::test_dir("tests/testthat",
+                                 filter = "^((?!visual).)*$",
+                                 reporter = "silent")
             } else {
               message("No non-visual tests found.")
             }
