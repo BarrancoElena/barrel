@@ -7,20 +7,27 @@ on:
 jobs:
   coverage:
     runs-on: ubuntu-latest
+    env:
+      VDIFFR_RUN_TESTS: "false"   # omite snapshots en CI
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: r-lib/actions/setup-r@v2
         with:
           r-version: 'release'
           use-public-rspm: true
+
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           packages: any::covr
           needs: coverage
+
       - name: Install package (no vignettes)
         run: |
-          R -q -e "install.packages(c('remotes','covr'), repos='https://cran.r-project.org')"
+          R -q -e "install.packages('remotes', repos='https://cran.r-project.org')"
           R -q -e "remotes::install_local('.', dependencies=TRUE, upgrade='never', build=TRUE, build_vignettes=FALSE, INSTALL_opts=c('--no-multiarch','--with-keep.source'))"
+
       - name: Compute coverage %
         run: |
           R -q -e "pc <- covr::percent_coverage(covr::package_coverage(type='tests')); cat(sprintf('%.2f%%\n', pc))"
