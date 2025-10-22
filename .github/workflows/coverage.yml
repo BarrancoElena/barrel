@@ -8,7 +8,7 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     env:
-      VDIFFR_RUN_TESTS: "false" 
+      VDIFFR_RUN_TESTS: "false"   # desactiva los snapshots de vdiffr en CI
 
     steps:
       - uses: actions/checkout@v4
@@ -29,8 +29,11 @@ jobs:
           R -q -e "remotes::install_local('.', dependencies=TRUE, upgrade='never', build=TRUE, build_vignettes=FALSE, INSTALL_opts=c('--no-multiarch','--with-keep.source'))"
 
       - name: Compute coverage %
+        shell: bash
         run: |
-          R -q -e "tf <- list.files('tests/testthat', '^test.*\\.R$', full.names=TRUE); \
-                   tf <- tf[!grepl('visual', tf, ignore.case=TRUE)]; \
-                   pc <- covr::percent_coverage(covr::package_coverage(test_files=tf)); \
-                   cat(sprintf('%.2f%%\\n', pc))"
+          Rscript - <<'RS'
+          tf <- list.files("tests/testthat", pattern="^test.*\\.R$", full.names=TRUE)
+          tf <- tf[!grepl("visual", tf, ignore.case=TRUE)]
+          pc <- covr::percent_coverage(covr::package_coverage(test_files = tf))
+          cat(sprintf("%.2f%%\n", pc))
+          RS
