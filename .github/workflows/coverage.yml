@@ -1,44 +1,26 @@
-name: Coverage
+name: Coverage %
 
 on:
   push:
-    branches: [ "main" ]
   pull_request:
 
 jobs:
   coverage:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    env:
-      COVERAGE_MIN: "0"
     steps:
       - uses: actions/checkout@v4
-
       - uses: r-lib/actions/setup-r@v2
         with:
           r-version: 'release'
           use-public-rspm: true
-      - name: Install deps
-        uses: r-lib/actions/setup-r-dependencies@v2
+      - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           packages: any::covr
-          extra-packages: any::covr
           needs: coverage
-
-      - name: Run tests and compute coverage
+      - name: Install package (no vignettes)
         run: |
-          R -q -e "cov <- covr::package_coverage();
-                   print(cov);
-                   pc <- covr::percent_coverage(cov);
-                   cat('Total coverage:', pc, '%\\n');
-                   if (as.numeric(Sys.getenv('COVERAGE_MIN')) > 0 && pc < as.numeric(Sys.getenv('COVERAGE_MIN'))) {
-                     stop(sprintf('Coverage %.2f%% is below threshold %s%%', pc, Sys.getenv('COVERAGE_MIN')))
-                   }
-                   covr::to_cobertura(cov, file='coverage.xml')"
-      - name: Upload to Codecov
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: codecov/codecov-action@v4
-        with:
-          files: coverage.xml
-          verbose: true
+          R -q -e "install.packages(c('remotes','covr'), repos='https://cran.r-project.org')"
+          R -q -e "remotes::install_local('.', dependencies=TRUE, upgrade='never', build=TRUE, build_vignettes=FALSE, INSTALL_opts=c('--no-multiarch','--with-keep.source'))"
+      - name: Compute coverage %
+        run: |
+          R -q -e "pc <- covr::percent_coverage(covr::package_coverage(type='tests')); cat(sprintf('%.2f%%\n', pc))"
