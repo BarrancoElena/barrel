@@ -2,11 +2,11 @@ Package: barrel
 Title: Covariance-Based Ellipses for Ordination Plots
 Version: 0.1.0
 Authors@R: 
-    person(
-given = "Author",
-family = "Anonymous",
-email = "anon.barrel@example.org",
-role = c("aut", "cre"))
+c(person(
+given  = "Anonymous",
+family = "Author",
+email  = "anon.barrel@example.org",
+role   = c("aut", "cre")))
 Description: Functions to generate covariance-based ellipses for RDA, PCA,
     NMDS, and other ordinations.
 License: MIT + file LICENSE
