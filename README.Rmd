@@ -91,11 +91,11 @@ Or view it online:
 
 ## Author
 
-**Diego Barranco-Elena**  
+**Author details will be provided after peer review**  
 [@yourhandle](https://github.com/YOUR_USERNAME)
 
 ---
 
 ## License
 
-MIT © 2025 Diego Barranco-Elena
+MIT © 2025 Autor name
