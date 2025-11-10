@@ -8,7 +8,7 @@ in R**
 
 [![CRAN
 status](https://www.r-pkg.org/badges/version/barrel)](https://CRAN.R-project.org/package=barrel)
-[![R-CMD-check](https://github.com/BarrancoElena/barrel/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/YOUR_USERNAME/barrel/actions)
+
 
 ------------------------------------------------------------------------
 
