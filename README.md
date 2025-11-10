@@ -96,11 +96,10 @@ browseVignettes("barrel")
 
 ## Author
 
-**Diego Barranco-Elena**  
-[@BarrancoElena](https://github.com/BarrancoElena)
+**Author details will be provided after peer review**  
 
 ------------------------------------------------------------------------
 
 ## License
 
-MIT © 2025 Diego Barranco-Elena
+MIT © 2025 Autor name
