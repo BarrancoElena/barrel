@@ -101,4 +101,4 @@ browseVignettes("barrel")
 
 ## License
 
-MIT © 2025 Autor name
+MIT © 2025 Diego Barranco-Elena
