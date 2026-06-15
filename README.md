@@ -1,7 +1,7 @@
 barrel: Ordination visualization in R
 ================
 
-# barrel <img src="man/figures/logo.png" align="right" height="140"/>
+# barrel <img src="man/figures/logo2.jpeg" align="right" height="140"/>
 
 **A tidy and flexible framework for visualizing multivariate ordinations
 in R**
