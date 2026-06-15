@@ -33,8 +33,7 @@ install.packages("barrel")
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("XXXX/barrel")
-# Installation (repository link omitted for double-blind review)
+devtools::install_github("BarrancoElena/barrel")
 ```
 
 ------------------------------------------------------------------------
@@ -97,7 +96,7 @@ browseVignettes("barrel")
 
 ## Author
 
-**Author details will be provided after peer review**  
+**Diego Barranco-Elena & Bàrbara Baraibar**  
 
 ------------------------------------------------------------------------
 
