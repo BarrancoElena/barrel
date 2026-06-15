@@ -54,7 +54,7 @@ ord <- barrel_prepare(ord, dune.env)
 autoplot(ord, group = "Management", data = dune)
 ```
 
-## \# barrel <img src="man/figures/example.nmds.Rplot.png" align="center" height="240"/>
+# <img src="man/figures/example.nmds.Rplot.png" align="center" height="560"/>
 
 ## Key features
 
