@@ -6,7 +6,8 @@ barrel: Ordination visualization in R
 **A tidy and flexible framework for visualizing multivariate ordinations
 in R**
 
-Repository link to CRAN omitted for double-blind review
+Repository link to CRAN:
+https://cran.r-project.org/web/packages/barrel/index.html
 
 
 ------------------------------------------------------------------------
